@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Capitalized (if needed)
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db  # Fixed spelling error
+
+  db:
+    build: ./db
+    ports:
+      - "6379:6379"  # Fixed indentation and dash spacing
+    volumes:
+      - .data:/data
