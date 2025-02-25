@@ -18,19 +18,18 @@ import (
 
 // ShortenURL handles shortening a long URL into a short ID
 func ShortenURL(c *gin.Context) {
-	// Declare a variable to store request data
+
 	var body models.Request
 	log.Println("hello world")
-	// Bind JSON request body to the `body` struct
 	if err := c.ShouldBind(&body); err != nil {
-		// Return error if the request body is not valid JSON
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot Parse JSON"})
 		return
 	}
 
 	// Create a Redis client for handling API rate limiting (database 1)
 	r2 := database.CreateClient(1)
-	defer r2.Close() // Ensure Redis connection is closed after execution
+	defer r2.Close()
 
 	// Get the remaining quota for the user's IP address
 	val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
@@ -66,10 +65,8 @@ func ShortenURL(c *gin.Context) {
 		return
 	}
 
-	// Ensure the URL has HTTP or HTTPS prefix
 	body.URL = utils.EnsureHTTPPrefix(body.URL)
 
-	// Declare a variable to store the shortened ID
 	var id string
 
 	// If the user does not provide a custom short URL, generate a random ID
@@ -79,14 +76,13 @@ func ShortenURL(c *gin.Context) {
 		id = body.CustomShort // Use the user-provided custom short URL
 	}
 
-	// Create a Redis client for storing the shortened URL (database 0)
 	r := database.CreateClient(0)
-	defer r.Close() // Ensure Redis connection is closed after execution
+	defer r.Close()
 
 	// Check if the custom short ID already exists in Redis
 	val, _ = r.Get(database.Ctx, id).Result()
 
-	if val != "" { // If the short ID already exists, return an error
+	if val != "" {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "URL Custom Short Already Exists",
 		})
@@ -101,7 +97,7 @@ func ShortenURL(c *gin.Context) {
 	// Store the short ID and original URL in Redis with an expiry time
 	err = r.Set(database.Ctx, id, body.URL, body.Expiry*3600*time.Second).Err()
 
-	if err != nil { // If storing the short URL fails, return an error
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to connect to the Redis server",
 		})
@@ -111,27 +107,22 @@ func ShortenURL(c *gin.Context) {
 	// Construct the response object with rate limits and URL information
 	resp := models.Response{
 		Expiry:          body.Expiry,
-		XRateLimitReset: 30, // Placeholder value (will be updated)
-		XRateRemainig:   10, // Placeholder value (will be updated)
+		XRateLimitReset: 30, //in minutes
+		XRateRemainig:   10,
 		URL:             body.URL,
 		CustomShort:     "",
 	}
 
-	// Decrease the user's available quota by 1 request
 	r2.Decr(database.Ctx, c.ClientIP())
 
-	// Get the updated quota and the time left before reset
 	val, _ = r2.Get(database.Ctx, c.ClientIP()).Result()
 	resp.XRateRemainig, _ = strconv.Atoi(val)
 
 	ttl, _ := r2.TTL(database.Ctx, c.ClientIP()).Result()
 
-	// Update the rate limit reset time in the response
 	resp.XRateLimitReset = ttl / time.Nanosecond / time.Minute
 
-	// Construct the full short URL using the domain name from environment variables
 	resp.CustomShort = os.Getenv("DOMAIN") + "/" + id
 
-	// Return the response with the shortened URL
 	c.JSON(http.StatusOK, resp)
 }
