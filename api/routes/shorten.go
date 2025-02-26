@@ -35,13 +35,14 @@ func ShortenURL(c *gin.Context) {
 	// Get the remaining quota for the user's IP address
 	//val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
 	val, err := database.Client.Get(database.Ctx, c.ClientIP()).Result()
-	fmt.Println(val)
+	// fmt.Println("ip:", c.ClientIP())
 
 	if err == redis.Nil { // If no quota exists, set the default API quota
 		_ = database.Client.Set(database.Ctx, c.ClientIP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
 
 	} else { // If quota exists, check the remaining requests
 		val, _ = database.Client.Get(database.Ctx, c.ClientIP()).Result()
+		fmt.Println("ip:", c.ClientIP())
 		valInt, _ := strconv.Atoi(val) // Convert quota to an integer
 
 		if valInt <= 0 { // If quota is 0 or negative, reject the request
