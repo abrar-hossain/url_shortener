@@ -1,1 +1,1 @@
-![URL Shortener Architecture](https://raw.githubusercontent.com/your-username/your-repo/main/url_shortener_diagram_with_utils.png)
+![URL Shortener Architecture]([https://raw.githubusercontent.com/your-username/your-repo/main/url_shortener_diagram_with_utils.png](https://github.com/abrar-hossain/url_shortener/blob/main/url_shortener_diagram_with_utils.png?raw=true))
