@@ -32,6 +32,7 @@ func ShortenURL(c *gin.Context) {
 	defer r2.Close()
 
 	// Get the remaining quota for the user's IP address
+	//val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
 	val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
 
 	if err == redis.Nil { // If no quota exists, set the default API quota
@@ -76,11 +77,11 @@ func ShortenURL(c *gin.Context) {
 		id = body.CustomShort // Use the user-provided custom short URL
 	}
 
-	r := database.CreateClient(0)
-	defer r.Close()
+	// r := database.CreateClient(0)
+	// defer r.Close()
 
 	// Check if the custom short ID already exists in Redis
-	val, _ = r.Get(database.Ctx, id).Result()
+	val, _ = database.Client.Get(database.Ctx, id).Result()
 
 	if val != "" {
 		c.JSON(http.StatusForbidden, gin.H{
@@ -95,7 +96,7 @@ func ShortenURL(c *gin.Context) {
 	}
 
 	// Store the short ID and original URL in Redis with an expiry time
-	err = r.Set(database.Ctx, id, body.URL, body.Expiry*3600*time.Second).Err()
+	err = database.Client.Set(database.Ctx, id, body.URL, body.Expiry*3600*time.Second).Err()
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

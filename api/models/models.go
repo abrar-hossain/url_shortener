@@ -15,3 +15,10 @@ type Response struct {
 	XRateRemainig   int           `json:"rate_limit"`
 	XRateLimitReset time.Duration `json:"rate_limit_reset"`
 }
+
+// Define a struct to represent the request body for adding a tag
+
+type Tagrequest struct {
+	ShortID string `json:"shortID"`
+	Tag     string `json:"tag"`
+}

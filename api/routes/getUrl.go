@@ -11,12 +11,12 @@ func GetByShortId(c *gin.Context) {
 
 	shortID := c.Param("shortID")
 
-	r := database.CreateClient(0)
+	// r := database.CreateClient(0)
 
-	defer r.Close()
+	// defer r.Close()
 
 	// Retrieve the original URL from Redis using the shortID as a key
-	val, err := r.Get(database.Ctx, shortID).Result()
+	val, err := database.Client.Get(database.Ctx, shortID).Result()
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{

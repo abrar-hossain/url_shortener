@@ -7,7 +7,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var Ctx = context.Background() //context of database
+var (
+	Ctx    = context.Background() //context of database
+	Client *redis.Client
+)
 
 func CreateClient(dbNo int) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
@@ -18,4 +21,8 @@ func CreateClient(dbNo int) *redis.Client {
 	})
 
 	return rdb
+}
+
+func InitializeClient() {
+	Client = CreateClient(0)
 }

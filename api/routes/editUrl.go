@@ -23,11 +23,11 @@ func EditURL(c *gin.Context) {
 		return
 	}
 
-	r := database.CreateClient(0)
+	// r := database.CreateClient(0)
 
-	defer r.Close()
+	// defer r.Close()
 
-	val, err := r.Get(database.Ctx, shortID).Result()
+	val, err := database.Client.Get(database.Ctx, shortID).Result()
 
 	if err != nil || val == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -37,7 +37,7 @@ func EditURL(c *gin.Context) {
 	}
 
 	// Update the URL and expiry time for the given shortID in Redis
-	err = r.Set(database.Ctx, shortID, body.URL, body.Expiry*3600*time.Second).Err()
+	err = database.Client.Set(database.Ctx, shortID, body.URL, body.Expiry*3600*time.Second).Err()
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
