@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,22 +29,23 @@ func ShortenURL(c *gin.Context) {
 	}
 
 	// Create a Redis client for handling API rate limiting (database 1)
-	r2 := database.CreateClient(1)
-	defer r2.Close()
+	// r2 := database.CreateClient(1)
+	// defer r2.Close()
 
 	// Get the remaining quota for the user's IP address
 	//val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
-	val, err := r2.Get(database.Ctx, c.ClientIP()).Result()
+	val, err := database.Client.Get(database.Ctx, c.ClientIP()).Result()
+	fmt.Println(val)
 
 	if err == redis.Nil { // If no quota exists, set the default API quota
-		_ = r2.Set(database.Ctx, c.ClientIP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
+		_ = database.Client.Set(database.Ctx, c.ClientIP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
 
 	} else { // If quota exists, check the remaining requests
-		val, _ = r2.Get(database.Ctx, c.ClientIP()).Result()
+		val, _ = database.Client.Get(database.Ctx, c.ClientIP()).Result()
 		valInt, _ := strconv.Atoi(val) // Convert quota to an integer
 
 		if valInt <= 0 { // If quota is 0 or negative, reject the request
-			limit, _ := r2.TTL(database.Ctx, c.ClientIP()).Result() // Get time left before quota resets
+			limit, _ := database.Client.TTL(database.Ctx, c.ClientIP()).Result() // Get time left before quota resets
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"error":            "rate limit exceeded",
 				"rate_limit_reset": limit / time.Nanosecond / time.Minute,
@@ -114,12 +116,12 @@ func ShortenURL(c *gin.Context) {
 		CustomShort:     "",
 	}
 
-	r2.Decr(database.Ctx, c.ClientIP())
+	database.Client.Decr(database.Ctx, c.ClientIP())
 
-	val, _ = r2.Get(database.Ctx, c.ClientIP()).Result()
+	val, _ = database.Client.Get(database.Ctx, c.ClientIP()).Result()
 	resp.XRateRemainig, _ = strconv.Atoi(val)
 
-	ttl, _ := r2.TTL(database.Ctx, c.ClientIP()).Result()
+	ttl, _ := database.Client.TTL(database.Ctx, c.ClientIP()).Result()
 
 	resp.XRateLimitReset = ttl / time.Nanosecond / time.Minute
 
